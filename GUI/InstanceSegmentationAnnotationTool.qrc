@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="logo">KITECH.PNG</file>
+		<file alias="logo2">KITECH2.PNG</file>
+    </qresource>
+</RCC>
