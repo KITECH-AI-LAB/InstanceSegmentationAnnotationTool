@@ -210,8 +210,8 @@ void ISAT::checkID()
 
 void ISAT::draw(QMouseEvent *e, QRect size)
 {
-    int mouse_pos_x = _mouse_pos.x() - size.x() - (size.width() - _inputImg.width()) / 2;
-    int mouse_pos_y = _mouse_pos.y() - size.y() - (size.height() - _inputImg.height()) / 2;
+    int mouse_pos_x = std::max(0, _mouse_pos.x() - size.x() - (size.width() - _inputImg.width()) / 2);
+    int mouse_pos_y = std::max(0, _mouse_pos.y() - size.y() - (size.height() - _inputImg.height()) / 2 - 13);
 
     if (!_draw_manual_mask)
     {

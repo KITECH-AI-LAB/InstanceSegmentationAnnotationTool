@@ -6,6 +6,10 @@
 - watershed 알고리즘 이용(직접 결과 mask 그리는 기능 사용 가능)
 - undo, redo 추가
 
+#### 2020.04.17
+- 마우스 커서 위치 변경
+- 데이터 저장 시 알림 추가
+
 ## 빌드 방법
 #### CMakeLists.txt의 5~6번째 줄을 수정하여 Qt, OpenCV 디렉토리 설정
 <div align="center">

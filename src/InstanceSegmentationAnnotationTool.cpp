@@ -14,8 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S),   this),  SIGNAL(activated()),    this,   SLOT(btn_save_clicked()));
     connect(new QShortcut(QKeySequence(Qt::Key_Plus),           this),  SIGNAL(activated()),    this,   SLOT(btn_plus_clicked()));
     connect(new QShortcut(QKeySequence(Qt::Key_Minus),          this),  SIGNAL(activated()),    this,   SLOT(btn_minus_clicked()));
-    //connect(new QShortcut(QKeySequence(Qt::Key_Up),             this),  SIGNAL(activated()),    this,   SLOT(btn_up_clicked()));
-    //connect(new QShortcut(QKeySequence(Qt::Key_Down),           this),  SIGNAL(activated()),    this,   SLOT(btn_down_clicked()));
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z),   this),  SIGNAL(activated()),    this,   SLOT(undo()));
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Y),   this),  SIGNAL(activated()),    this,   SLOT(redo()));
 
@@ -108,37 +106,7 @@ void MainWindow::slider_value_changed()
 
     move_img();
 }
-/*
-void MainWindow::btn_up_clicked()
-{
-    if (!init_parameter.is_init)
-        return;
 
-    QTreeWidgetItem *item = ui->treeWidget_class->currentItem();
-    
-    ui->treeWidget_class->setCurrentItem(item);
-    item->setSelected(true);
-
-    show_msgBox(QMessageBox::Critical, "Error", "Up");
-}
-
-void MainWindow::btn_down_clicked()
-{
-    if (!init_parameter.is_init)
-        return;
-
-    QTreeWidgetItem* item = ui->treeWidget_class->currentItem();
-    
-    QModelIndex idx = ui->treeWidget_class->currentIndex();
-    
-    //ui->treeWidget_class->setCurrentItem(item);
-    //item->setSelected(true);
-
-
-
-    show_msgBox(QMessageBox::Critical, "Error", "Down");
-}
-*/
 void MainWindow::btn_watershed_clicked()
 {    
     if (!init_parameter.is_init)
@@ -154,6 +122,8 @@ void MainWindow::btn_save_clicked()
         return;
 
     canvas.save();
+
+    show_msgBox(QMessageBox::Information, "Save", "Data was saved");
 }
 
 void MainWindow::btn_img_dir_clicked()
