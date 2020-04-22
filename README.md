@@ -10,6 +10,12 @@
 - 마우스 커서 위치 변경
 - 데이터 저장 시 알림 추가
 
+#### 2020.04.22
+- sort.py 추가
+  - 저장된 mask, label 정렬
+  - background에 할당된 픽셀 값 0으로 변경, label에서 background 제거
+  - 사용법: sort.py의 89~90 줄 저장된 데이터 경로로 수정 후 python sort.py 명령어 실행
+
 ## 빌드 방법
 #### CMakeLists.txt의 5~6번째 줄을 수정하여 Qt, OpenCV 디렉토리 설정
 <div align="center">
@@ -102,6 +108,7 @@
 - Visual studio 2017
 - OpenCV 4.2.0
 - Qt 5.14.1
+- python 3.7
 
 ## Reference
 - https://github.com/abreheret/PixelAnnotationTool
