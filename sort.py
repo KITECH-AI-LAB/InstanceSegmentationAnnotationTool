@@ -42,6 +42,9 @@ def main(data_root,names_file):
         assert(os.path.isfile(mask_path))
         assert(os.path.isfile(label_path))
 
+        mask = cv2.imread(mask_path)
+        mask = mask[:,:,0]
+
         label = []
         with open(label_path,'r') as f:
             lines = f.readlines()
@@ -61,10 +64,7 @@ def main(data_root,names_file):
                 label.append((int(index), class_name))
 
         label = sorted(label)
-        
-        mask = cv2.imread(mask_path)
-        mask = mask[:,:,0]
-        
+                
         new_index = 1
         for (index, class_name) in label:
             mask[np.where(mask == index)] = new_index
