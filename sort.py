@@ -50,6 +50,7 @@ def main(data_root,names_file):
                 index, class_name = line.replace("\n","").split(" ")
 
                 if class_name == "Background":
+                    mask[np.where(mask == int(index))] = 0
                     continue
 
                 try:
