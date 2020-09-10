@@ -114,7 +114,8 @@ void ISAT::createID(int& id, QColor& color, QString class_name)
     
     if (class_name == "Background")
     {
-        while (1)
+        /*
+		while (1)
         {
             color = QColor(0,0,0);
 
@@ -123,6 +124,9 @@ void ISAT::createID(int& id, QColor& color, QString class_name)
                         
             id++;
         }
+		*/
+		color = QColor(0, 0, 0);
+		id = 255;
     }
     else
     {
@@ -148,8 +152,8 @@ void ISAT::createID(int& id, QColor& color, QString class_name)
 void ISAT::createID(int id, QString class_name)
 {
     QColor color = QColor();
-    if (class_name == "Background")
-        color = QColor(0,0,0);
+	if (class_name == "Background") 
+		color = QColor(0, 0, 0);
     else
     {
         while (1)
@@ -169,16 +173,29 @@ void ISAT::createID(int id, QString class_name)
     _id_storage.emplace_back(new_id);
 }
 
-void ISAT::changeID(int id)
+bool ISAT::changeID(int id)
 {
     for (auto _id : _id_storage)
     {
         if (_id.id.red() == id)
         {
             _color = _id;
-            break;
+            return true;
         }
     }
+	return false;
+}
+
+void ISAT::changeBackgroundID()
+{
+	for (auto _id : _id_storage)
+	{
+		if (_id.class_name == "Background")
+		{
+			_color = _id;
+			break;
+		}
+	}
 }
 
 void ISAT::checkID()
@@ -210,6 +227,14 @@ void ISAT::checkID()
 
 void ISAT::draw(QMouseEvent *e, QRect size)
 {
+    if (_color.class_name == "Background")
+    {
+        if (_draw_manual_mask)
+            _color.id = QColor(0, 0, 0);
+        else
+            _color.id = QColor(255, 255, 255);
+    }
+
     int mouse_pos_x = std::max(0, _mouse_pos.x() - size.x() - (size.width() - _inputImg.width()) / 2);
     int mouse_pos_y = std::max(0, _mouse_pos.y() - size.y() - (size.height() - _inputImg.height()) / 2 - 13);
 
@@ -301,13 +326,12 @@ void ISAT::update_mask()
 
 void ISAT::run_watershed()
 {
-    if (_effective_id.size() <= 1)
-    {
-        _is_watershed = false;
-        _watershed = ImageMask();
-        return;
-    }
+    _is_watershed = false;
+    _watershed = ImageMask();
 
+    if (_effective_id.size() <= 1)
+        return;
+    
     QImage iwatershed = watershed(_inputImg, _mask.id);
     _watershed.id = iwatershed;
     idToColor(_watershed);
@@ -328,7 +352,13 @@ void ISAT::idToColor(ImageMask& mask)
     {
         for (int row = 0; row < height; row++)
         {
-            changeID(img_id.at<cv::Vec3b>(row, col)[0]);
+			if (!changeID(img_id.at<cv::Vec3b>(row, col)[0])) {
+
+				changeBackgroundID();
+				img_id.at<cv::Vec3b>(row, col)[0] = 0;
+				img_id.at<cv::Vec3b>(row, col)[1] = 0;
+				img_id.at<cv::Vec3b>(row, col)[2] = 0;
+			}
             QColor rgb = _color.color;
 
             img_color.at<cv::Vec3b>(row, col)[0] = rgb.blue();
@@ -336,7 +366,7 @@ void ISAT::idToColor(ImageMask& mask)
             img_color.at<cv::Vec3b>(row, col)[2] = rgb.red();
         }
     }
-
+	mask.id = mat2QImage(img_id);
     mask.color = mat2QImage(img_color);
 }
 
@@ -349,7 +379,7 @@ void ISAT::save()
 
         cv::Mat watershed_mask = qImage2Mat(_watershed.id); // 255: edge
         if (qImage2Mat(_inputImg).size() != _inputImg_size)
-            cv::resize(watershed_mask, watershed_mask, _inputImg_size);
+            cv::resize(watershed_mask, watershed_mask, _inputImg_size,0,0,cv::INTER_NEAREST);
         cv::imwrite(save_root + "mask.png", watershed_mask);
 
         std::string old_mask_path = save_root + "mask.png";
@@ -362,9 +392,9 @@ void ISAT::save()
         cv::Mat drawing_mask = qImage2Mat(_mask.id);
         if (qImage2Mat(_inputImg).size() != _inputImg_size)
             cv::resize(drawing_mask, drawing_mask, _inputImg_size);
-        cv::imwrite(save_root + "mask.png", drawing_mask);
+        cv::imwrite(save_root + "dat.png", drawing_mask);
 
-        old_mask_path = save_root + "mask.png";
+        old_mask_path = save_root + "dat.png";
         new_mask_path = save_root + "dat";
         if (FileExist(new_mask_path))
             remove(new_mask_path.c_str());
@@ -373,9 +403,13 @@ void ISAT::save()
 
         std::string label_path = save_root + "txt";
         std::ofstream ofs_results(label_path, std::ios::binary);
+
+		sort(_effective_id.begin(), _effective_id.end());
         for (auto idx : _effective_id)
         {
             changeID(idx);
+			if (_color.class_name == "Background")
+				idx = 0;
             ofs_results << idx << " " << _color.class_name.toStdString() << "\n";
         }
         ofs_results.close();
@@ -404,7 +438,10 @@ void ISAT::read()
         {
             int id = atoi(lines[2*idx].c_str());
             QString class_name = QString::fromStdString(lines[2*idx+1]);
-            
+
+			if (class_name == "Background")
+				id = 255;
+
             createID(id, class_name);
             _effective_id.emplace_back(id);
 
@@ -415,7 +452,7 @@ void ISAT::read()
 
         cv::Mat watershed_mask = cv::imread(save_root + "mask");
         if (input_img.size() != watershed_mask.size())
-            cv::resize(watershed_mask, watershed_mask, input_img.size());
+            cv::resize(watershed_mask, watershed_mask, input_img.size(),0,0, cv::INTER_NEAREST);
         _watershed.id = mat2QImage(watershed_mask);
         idToColor(_watershed);
 

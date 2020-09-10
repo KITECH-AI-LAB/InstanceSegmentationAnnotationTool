@@ -33,14 +33,16 @@ private slots:
     void btn_prev_clicked();
     void btn_next_clicked();
     void slider_value_changed();
-    //void btn_up_clicked();
-    //void btn_down_clicked();
+    void btn_up_clicked();
+    void btn_down_clicked();
     void btn_watershed_clicked();
     void btn_save_clicked();
 
     void btn_img_dir_clicked();
     void btn_set_class_clicked();
     void set_pen_size();
+    void change_manual();
+    void change_watershed();
     void change_visualize_mode();
     void btn_plus_clicked();
     void btn_minus_clicked();

@@ -16,6 +16,22 @@
   - background에 할당된 픽셀 값 0으로 변경, label에서 background 제거
   - 사용법: sort.py의 89~90 줄 저장된 데이터 경로로 수정 후 python sort.py 명령어 실행
 
+#### 2020.09.10
+- 버그 수정
+  - manual mode 수정 사항 undo 적용 안됨 해결
+  - 이미지 작업 중 다른 directory 불러올 시 이전 작업 내용으로 덮어써짐 해결
+  - 1400 x 900 보다 큰 이미지 작업 시 label이 아닌 값이 mask에 저장 됨 해결
+  - .txt 파일에 저장된 label이 누락되어 표시됨 해결
+  - .mask 파일에 Background에 해당된 픽셀 값 0으로 저장
+- 단축키 추가
+  - M: manual mode on/off
+  - N: watershed mask on/off
+  - P: label 추가('+'버튼과 동일)
+  - 키보드 방향키 위,아래를 통해 label간 이동 가능
+- 첫 번째/마지막 이미지에서 이전/다음 이미지로 넘어갈 시 작업내용 저장 후 첫 번째/마지막 이미지임을 알림
+- 결과 저장 시 label, mask ID의 정렬
+- 랜덤 색상 배정시 무작위성 높임
+
 ## 빌드 방법
 #### CMakeLists.txt의 5~6번째 줄을 수정하여 Qt, OpenCV 디렉토리 설정
 <div align="center">
@@ -95,12 +111,33 @@
     - redo: ctrl+y
 	- 저장되는 파일
 	    - *.dat: watershed 알고리즘 수행을 위한 mask
-		- *.mask: watershed 알고리즘 결과 mask, 255: edge
+		- *.mask: watershed 알고리즘 결과 mask
 		- *.txt: *.mask에 대한 label
+
+-작업 예시
+<div align="center">
+<img width="957" alt="UI" src="https://user-images.githubusercontent.com/68308047/92672801-7beaa880-f354-11ea-96a8-19373f7a03eb.png">
+<div align="left">
+
+    - 작업 희망 폴더 및 class 정보 텍스트 파일 불러옴
+    - 우측 class tree에서 작업 희망 label 선택 후 이미지 위에서 드래그 하여 watershed 알고리즘의 가이드 라인 생성
+       (Background의 경우 '+'버튼 사용 안함, 다른 label들은 객체별로 '+'를 통해 No. 생성 후 작업)
+       (가이드 라인은 추후 딥러닝 모델에 사용되지 않음)
+
+<div align="center">
+<img width="957" alt="UI" src="https://user-images.githubusercontent.com/68308047/92673058-26fb6200-f355-11ea-9a1b-47c2aa455805.png">
+<div align="left">
+
+    - 모든 가이드 라인 작업 후 'watershed' 버튼을 통해 mask 생성
+
+<div align="center">
+<img width="957" alt="UI" src="https://user-images.githubusercontent.com/68308047/92673434-0da6e580-f356-11ea-9dee-7a3dc59d0ac8.png">
+<div align="left">
+
+    - manual 체크박스 체크 후 드래그하여 mask 수정
 
 ## to do
 - 이미지 한글 경로 지원
-- 키보드 방향키 위, 아래를 이용한 라벨 변경
 - pretrained segmentation model 사용(pytorch, tensorflow 등)
 
 ## 개발 환경

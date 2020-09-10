@@ -57,7 +57,8 @@ public:
     bool checkDuplication(int id, QColor color);
     void createID(int& id, QColor& color, QString class_name);
     void createID(int id, QString class_name);
-    void changeID(int id);
+    bool changeID(int id);
+    void changeBackgroundID();
     void checkID();
     void draw(QMouseEvent *e, QRect size);
     void update_mask();

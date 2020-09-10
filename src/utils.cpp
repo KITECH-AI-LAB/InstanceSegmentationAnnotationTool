@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <qDebug>
 
 bool FileExist(const std::string& filename)
 {
@@ -81,8 +82,8 @@ int openImage(std::string img_path, cv::Size& img_size, QImage& image)
 
 cv::Mat resizeImage(cv::Mat const& src)
 {
-    int max_width = 1600;
-    int max_height = 1200;
+    int max_width = 1400;
+    int max_height = 900;
 
     int current_width = src.cols;
     int current_height = src.rows;
@@ -128,7 +129,7 @@ cv::Mat convertMat32StoRGBC3(const cv::Mat& mat)
         {
             label = ptr[c];
             pix = &ptr_dst[c * 3];
-            if (label > 0)
+            if (label > 0 && label < 255)
             {
                 pix[0] = label;
                 pix[1] = label;
@@ -148,9 +149,19 @@ int getRandomColor(QColor& rgb)
 {
     std::random_device rng;
 
-    int r = 127 + rng() % 128;
-    int g = 127 + rng() % 128;
-    int b = 127 + rng() % 128;
+	std::mt19937_64 rnd(rng());
+
+	std::uniform_int_distribution<int> range(0, 128);
+
+	/*
+	int r = 127 + rng() % 128;
+	int g = 127 + rng() % 128;
+	int b = 127 + rng() % 128;
+	*/
+
+	int r = 127 + range(rnd);
+	int g = 127 + range(rnd);
+	int b = 127 + range(rnd);
 
     rgb = QColor(r, g, b);
 
@@ -168,7 +179,6 @@ QImage watershed(const QImage& qimage, const QImage& qmarkers_mask)
         cv::Vec3b* mask = markers_mask.ptr<cv::Vec3b>(y);
         for (int x = 0; x < markers_mask.cols; x++)
             mark[x] = mask[x][0];
-
     }
     cv::watershed(image, markers);
     cv::Mat new_mask = convertMat32StoRGBC3(markers);

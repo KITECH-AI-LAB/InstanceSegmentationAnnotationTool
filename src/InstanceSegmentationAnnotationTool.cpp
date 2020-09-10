@@ -1,4 +1,5 @@
 #include "InstanceSegmentationAnnotationTool.h"
+#include <iostream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -10,6 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
     
     connect(new QShortcut(QKeySequence(Qt::Key_Left),           this),  SIGNAL(activated()),    this,   SLOT(btn_prev_clicked()));
     connect(new QShortcut(QKeySequence(Qt::Key_Right),          this),  SIGNAL(activated()),    this,   SLOT(btn_next_clicked()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Up),				this),	SIGNAL(activated()),	this,	SLOT(btn_up_clicked()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Down),			this),	SIGNAL(activated()),	this,	SLOT(btn_down_clicked()));
     connect(new QShortcut(QKeySequence(Qt::Key_Space),          this),  SIGNAL(activated()),    this,   SLOT(btn_watershed_clicked()));
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S),   this),  SIGNAL(activated()),    this,   SLOT(btn_save_clicked()));
     connect(new QShortcut(QKeySequence(Qt::Key_Plus),           this),  SIGNAL(activated()),    this,   SLOT(btn_plus_clicked()));
@@ -17,6 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z),   this),  SIGNAL(activated()),    this,   SLOT(undo()));
     connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Y),   this),  SIGNAL(activated()),    this,   SLOT(redo()));
 
+	connect(new QShortcut(QKeySequence(Qt::Key_M),				this), SIGNAL(activated()),		this, SLOT(change_manual()));
+	connect(new QShortcut(QKeySequence(Qt::Key_N),				this), SIGNAL(activated()),		this, SLOT(change_watershed()));
+	connect(new QShortcut(QKeySequence(Qt::Key_P),				this), SIGNAL(activated()),		this, SLOT(btn_plus_clicked()));
 
     connect(ui->pushButton_prev,            SIGNAL(clicked()),              this,   SLOT(btn_prev_clicked()));
     connect(ui->pushButton_next,            SIGNAL(clicked()),              this,   SLOT(btn_next_clicked()));
@@ -45,10 +51,11 @@ void MainWindow::btn_prev_clicked()
 {
     if (!init_parameter.is_init)
         return;
-    
+   
+	/*
     if (canvas._imgIndex == 0)
         return;
-    
+    */
     if (canvas._effective_id.size() > 1 && !canvas._is_watershed)
     {
         btn_watershed_clicked();
@@ -57,6 +64,11 @@ void MainWindow::btn_prev_clicked()
     }
 
     btn_save_clicked();
+
+	if (canvas._imgIndex == 0) {
+		show_msgBox(QMessageBox::Information, "First", "This is first image.");
+		return;
+	}
 
     canvas._imgIndex -= 1;
     canvas._imgFile = canvas._imgList[canvas._imgIndex];
@@ -69,9 +81,10 @@ void MainWindow::btn_next_clicked()
     if (!init_parameter.is_init)
         return;
 
-    if (canvas._imgIndex == canvas._imgList.size() - 1)
-        return;
-
+	/*
+	if (canvas._imgIndex == canvas._imgList.size() - 1) 
+		return;
+     */   
     if (canvas._effective_id.size() > 1 && !canvas._is_watershed)
     {
         btn_watershed_clicked();
@@ -81,10 +94,49 @@ void MainWindow::btn_next_clicked()
 
     btn_save_clicked();
 
+	if (canvas._imgIndex == canvas._imgList.size() - 1) {
+		show_msgBox(QMessageBox::Information, "End", "This is last image.");
+		return;
+	}
+
     canvas._imgIndex += 1;
     canvas._imgFile = canvas._imgList[canvas._imgIndex];
 
     move_img();
+}
+
+void MainWindow::btn_up_clicked()
+{
+	QTreeWidgetItem *item = ui->treeWidget_class->currentItem();
+	
+	if (item == NULL)
+		return;
+	
+	QTreeWidgetItem *item_above = ui->treeWidget_class->itemAbove(item);
+	
+	if (item_above == NULL)
+		return;
+
+	ui->treeWidget_class->setCurrentItem(item_above);
+	item_above->setSelected(true);
+
+}
+
+void MainWindow::btn_down_clicked()
+{
+	QTreeWidgetItem *item = ui->treeWidget_class->currentItem();
+
+	if (item == NULL)
+		return;
+
+	QTreeWidgetItem *item_below = ui->treeWidget_class->itemBelow(item);
+
+	if (item_below == NULL)
+		return;
+	ui->treeWidget_class->setCurrentItem(item_below);
+	item_below->setSelected(true);
+
+
 }
 
 void MainWindow::slider_value_changed()
@@ -98,8 +150,8 @@ void MainWindow::slider_value_changed()
         show_msgBox(QMessageBox::Warning, "Warning", "Please check the output.");
         return;
     }
-
-    btn_save_clicked();
+	if(init_parameter.is_set_dir)
+		btn_save_clicked();
 
     canvas._imgIndex = ui->horizontalSlider_progress->value();
     canvas._imgFile = canvas._imgList[canvas._imgIndex];
@@ -128,9 +180,13 @@ void MainWindow::btn_save_clicked()
 
 void MainWindow::btn_img_dir_clicked()
 {
+	init_parameter.is_set_dir = false;
+
     QString opened_dir = QFileDialog::getExistingDirectory(this, "Choose a directory to be read in", "./", QFileDialog::ShowDirsOnly);
 	
-    std::string selected_dir = opened_dir.toStdString();
+	qDebug() << opened_dir;
+	std::string selected_dir = opened_dir.toStdString();
+	qDebug() << QString::fromStdString(selected_dir);
     std::vector<std::string> total_file_list;
     getFilelistRecursive(selected_dir, total_file_list);
     std::vector<std::string> img_file_list;
@@ -144,11 +200,13 @@ void MainWindow::btn_img_dir_clicked()
     else
     {
         QStringList img_list;
+		
+
         for (auto file : img_file_list)
             img_list << QString::fromStdString(file);
 
         canvas._imgList = img_list;
-        canvas._imgIndex = 0;
+		canvas._imgIndex = 0;
         canvas._imgFile = canvas._imgList[canvas._imgIndex];
 
         ui->horizontalSlider_progress->tickPosition();
@@ -194,6 +252,31 @@ void MainWindow::set_pen_size()
     canvas._pen_size = ui->spinBox_pen_size->value();
 }
 
+void MainWindow::change_manual()
+{
+	if (!init_parameter.is_init)
+		return;
+
+	if (ui->checkBox_drawmode->isChecked())
+		ui->checkBox_drawmode->setChecked(false);
+	else
+		ui->checkBox_drawmode->setChecked(true);
+
+	change_visualize_mode();
+}
+
+void MainWindow::change_watershed()
+{
+	if (!init_parameter.is_init)
+		return;
+
+	if (ui->checkBox_watershed_mask->isChecked())
+		ui->checkBox_watershed_mask->setChecked(false);
+	else
+		ui->checkBox_watershed_mask->setChecked(true);
+
+	change_visualize_mode();
+}
 void  MainWindow::change_visualize_mode()
 {
     if (!init_parameter.is_init)
@@ -283,14 +366,17 @@ void MainWindow::btn_minus_clicked()
 
     QTreeWidgetItem *parent = item->parent();
 
-    int child_idx;
+	
+    int child_idx = parent->indexOfChild(item);
+
+	/*
     for (child_idx = 0; child_idx < parent->childCount(); child_idx++)
     {
         QTreeWidgetItem *child = parent->child(child_idx);
         if (child == item)
             break;
     }
-
+	*/
     for (int idx = child_idx; idx < parent->childCount(); idx++)
     {
         QTreeWidgetItem *child = parent->child(idx);
@@ -339,9 +425,9 @@ void MainWindow::undo()
     canvas._mask = canvas._undo_list[canvas._undo_idx];
     canvas.checkID();
 
-    if (canvas._is_watershed)
+    /*if (canvas._is_watershed)
         canvas.run_watershed();
-    
+    */
     canvas.update_mask();
     update_img();
 
