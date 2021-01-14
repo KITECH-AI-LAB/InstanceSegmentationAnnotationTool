@@ -1,5 +1,7 @@
 #include "ISAT.h"
 
+#include <QDebug>
+
 ImageMask::ImageMask() {}
 
 ImageMask::ImageMask(QSize s) 
@@ -114,17 +116,6 @@ void ISAT::createID(int& id, QColor& color, QString class_name)
     
     if (class_name == "Background")
     {
-        /*
-		while (1)
-        {
-            color = QColor(0,0,0);
-
-            if (checkDuplication(id, color))
-                break;
-                        
-            id++;
-        }
-		*/
 		color = QColor(0, 0, 0);
 		id = 255;
     }
@@ -311,14 +302,51 @@ void ISAT::update_mask()
             }
         }
     }
-
+    
     _mask.id = mat2QImage(id);
     _mask.color = mat2QImage(color);
 
     if (_display_watershed_mask && _is_watershed && _effective_id.size() != 0)
     {
-        cv::Mat watershed_mask = qImage2Mat(_watershed.color);
-        inputImg_display = 0.3*inputImg_display + 0.7*watershed_mask;
+        cv::Mat watershed_id = qImage2Mat(_watershed.id);
+        for (auto id_num : _effective_id)
+        {
+            cv::Mat mask = (watershed_id == id_num);
+            cv::cvtColor(mask, mask, cv::COLOR_BGR2GRAY);
+
+            mask.convertTo(mask, CV_8U);
+            changeID(id_num);
+
+            if (_color.class_name == "Background")
+                continue;
+
+            QColor rgb = _color.color;
+
+            std::vector<cv::Mat> contours;
+            cv::Mat hierarchy;
+            cv::findContours(mask.clone(), contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+                        
+            cv::Rect box;
+            for (auto contour : contours)
+                box = box | cv::boundingRect(contour);    
+            
+            cv::Mat bgr_mat;
+            std::vector<cv::Mat> bgr;
+            bgr.emplace_back(mask.clone() / 255 * rgb.blue()); // b
+            bgr.emplace_back(mask.clone() / 255 * rgb.green()); // g
+            bgr.emplace_back(mask.clone() / 255 * rgb.red()); // r
+            cv::merge(bgr, bgr_mat);
+
+            cv::Mat coloredRoi = (0.7 * bgr_mat + 0.3 * inputImg_display);
+
+            const cv::Rect curBoxRect(cv::Point(box.x, box.y), cv::Point(box.x+box.width, box.y+box.height));
+            coloredRoi = coloredRoi(curBoxRect);
+
+            coloredRoi.copyTo(inputImg_display(curBoxRect), mask(curBoxRect));
+
+            cv::rectangle(inputImg_display, box, cv::Scalar(rgb.blue(), rgb.green(), rgb.red()), 2);
+            cv::drawContours(inputImg_display, contours, -1, cv::Scalar(rgb.blue(), rgb.green(), rgb.red()), 2, cv::LINE_8, hierarchy, 100);
+        }
     }
     
     _inputImg_display = mat2QImage(inputImg_display);
@@ -342,7 +370,7 @@ void ISAT::run_watershed()
 void ISAT::idToColor(ImageMask& mask)
 {
     cv::Mat img_id = qImage2Mat(mask.id);
-
+    
     int width = img_id.cols;
     int height = img_id.rows;
 
@@ -352,18 +380,23 @@ void ISAT::idToColor(ImageMask& mask)
     {
         for (int row = 0; row < height; row++)
         {
-			if (!changeID(img_id.at<cv::Vec3b>(row, col)[0])) {
+            //changeID(img_id.at<cv::Vec3b>(row, col)[0]);
+            
+            if (!changeID(img_id.at<cv::Vec3b>(row, col)[0])) 
+			{
 
 				changeBackgroundID();
 				img_id.at<cv::Vec3b>(row, col)[0] = 0;
 				img_id.at<cv::Vec3b>(row, col)[1] = 0;
 				img_id.at<cv::Vec3b>(row, col)[2] = 0;
 			}
-            QColor rgb = _color.color;
+            {
+                QColor rgb = _color.color;
 
-            img_color.at<cv::Vec3b>(row, col)[0] = rgb.blue();
-            img_color.at<cv::Vec3b>(row, col)[1] = rgb.green();
-            img_color.at<cv::Vec3b>(row, col)[2] = rgb.red();
+                img_color.at<cv::Vec3b>(row, col)[0] = rgb.blue();
+                img_color.at<cv::Vec3b>(row, col)[1] = rgb.green();
+                img_color.at<cv::Vec3b>(row, col)[2] = rgb.red();
+            }
         }
     }
 	mask.id = mat2QImage(img_id);
@@ -441,7 +474,7 @@ void ISAT::read()
 
 			if (class_name == "Background")
 				id = 255;
-
+			
             createID(id, class_name);
             _effective_id.emplace_back(id);
 

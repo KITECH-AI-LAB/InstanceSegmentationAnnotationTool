@@ -1,5 +1,4 @@
 #include "utils.h"
-#include <qDebug>
 
 bool FileExist(const std::string& filename)
 {
@@ -152,12 +151,6 @@ int getRandomColor(QColor& rgb)
 	std::mt19937_64 rnd(rng());
 
 	std::uniform_int_distribution<int> range(0, 128);
-
-	/*
-	int r = 127 + rng() % 128;
-	int g = 127 + rng() % 128;
-	int b = 127 + rng() % 128;
-	*/
 
 	int r = 127 + range(rnd);
 	int g = 127 + range(rnd);

@@ -1,22 +1,14 @@
 # InstanceSegmentationAnnotationTool
 
 ## 개요
-#### 2020.04.13. ver.1
-- deep learning based instance segmentation model 학습용 mask 제작을 위해 만든 annotation tool
-- watershed 알고리즘 이용(직접 결과 mask 그리는 기능 사용 가능)
-- undo, redo 추가
+#### 2021.01.11 [ver.1.2]
+- 시각화 기능 개선
+  - bounding box 추가, contour 추가
+<div align="center">
+<img width="612" alt="0-2" src="https://user-images.githubusercontent.com/54341546/104527896-3531f580-5649-11eb-855e-477d844c148e.PNG">
+<div align="left">
 
-#### 2020.04.17
-- 마우스 커서 위치 변경
-- 데이터 저장 시 알림 추가
-
-#### 2020.04.22
-- sort.py 추가
-  - 저장된 mask, label 정렬
-  - background에 할당된 픽셀 값 0으로 변경, label에서 background 제거
-  - 사용법: sort.py의 89~90 줄 저장된 데이터 경로로 수정 후 python sort.py 명령어 실행
-
-#### 2020.09.10
+#### 2020.09.10 [ver.1.1]
 - 버그 수정
   - manual mode 수정 사항 undo 적용 안됨 해결
   - 이미지 작업 중 다른 directory 불러올 시 이전 작업 내용으로 덮어써짐 해결
@@ -31,6 +23,21 @@
 - 첫 번째/마지막 이미지에서 이전/다음 이미지로 넘어갈 시 작업내용 저장 후 첫 번째/마지막 이미지임을 알림
 - 결과 저장 시 label, mask ID의 정렬
 - 랜덤 색상 배정시 무작위성 높임
+
+#### 2020.04.22
+- sort.py 추가
+  - 저장된 mask, label 정렬
+  - background에 할당된 픽셀 값 0으로 변경, label에서 background 제거
+  - 사용법: sort.py의 89~90 줄 저장된 데이터 경로로 수정 후 python sort.py 명령어 실행
+
+#### 2020.04.17
+- 마우스 커서 위치 변경
+- 데이터 저장 시 알림 추가
+
+#### 2020.04.13 [ver.1]
+- deep learning based instance segmentation model 학습용 mask 제작을 위해 만든 annotation tool
+- watershed 알고리즘 이용(직접 결과 mask 그리는 기능 사용 가능)
+- undo, redo 추가
 
 ## 빌드 방법
 #### CMakeLists.txt의 5~6번째 줄을 수정하여 Qt, OpenCV 디렉토리 설정

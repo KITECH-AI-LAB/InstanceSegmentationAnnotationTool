@@ -52,10 +52,6 @@ void MainWindow::btn_prev_clicked()
     if (!init_parameter.is_init)
         return;
    
-	/*
-    if (canvas._imgIndex == 0)
-        return;
-    */
     if (canvas._effective_id.size() > 1 && !canvas._is_watershed)
     {
         btn_watershed_clicked();
@@ -80,11 +76,7 @@ void MainWindow::btn_next_clicked()
 {
     if (!init_parameter.is_init)
         return;
-
-	/*
-	if (canvas._imgIndex == canvas._imgList.size() - 1) 
-		return;
-     */   
+  
     if (canvas._effective_id.size() > 1 && !canvas._is_watershed)
     {
         btn_watershed_clicked();
@@ -174,19 +166,19 @@ void MainWindow::btn_save_clicked()
         return;
 
     canvas.save();
-
+    
     show_msgBox(QMessageBox::Information, "Save", "Data was saved");
 }
 
 void MainWindow::btn_img_dir_clicked()
 {
 	init_parameter.is_set_dir = false;
+    init_parameter.is_init = false;
 
     QString opened_dir = QFileDialog::getExistingDirectory(this, "Choose a directory to be read in", "./", QFileDialog::ShowDirsOnly);
 	
-	qDebug() << opened_dir;
 	std::string selected_dir = opened_dir.toStdString();
-	qDebug() << QString::fromStdString(selected_dir);
+	
     std::vector<std::string> total_file_list;
     getFilelistRecursive(selected_dir, total_file_list);
     std::vector<std::string> img_file_list;
@@ -369,14 +361,6 @@ void MainWindow::btn_minus_clicked()
 	
     int child_idx = parent->indexOfChild(item);
 
-	/*
-    for (child_idx = 0; child_idx < parent->childCount(); child_idx++)
-    {
-        QTreeWidgetItem *child = parent->child(child_idx);
-        if (child == item)
-            break;
-    }
-	*/
     for (int idx = child_idx; idx < parent->childCount(); idx++)
     {
         QTreeWidgetItem *child = parent->child(idx);
@@ -425,9 +409,6 @@ void MainWindow::undo()
     canvas._mask = canvas._undo_list[canvas._undo_idx];
     canvas.checkID();
 
-    /*if (canvas._is_watershed)
-        canvas.run_watershed();
-    */
     canvas.update_mask();
     update_img();
 
@@ -450,7 +431,6 @@ void MainWindow::redo()
 
     canvas._mask = canvas._undo_list[canvas._undo_idx];
     canvas.checkID();
-    canvas.run_watershed();
     canvas.update_mask();
     update_img();
 }
@@ -675,6 +655,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *e)
 
     QRect size = ui->label_img_display->geometry();
     
+    canvas.changeID(ui->treeWidget_class->currentItem()->text(3).toInt());
     if (canvas._mouse_is_pressed)
         canvas.draw(e, size);
     
@@ -689,7 +670,9 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *e)
     if (e->button() == Qt::LeftButton) 
     {
         canvas._mouse_is_pressed = false;
-        canvas._undo_list.emplace_back(canvas._mask);
-        canvas._undo_idx = canvas._undo_list.size()-1;
+		
+		canvas._undo_list.erase(canvas._undo_list.begin() + canvas._undo_idx+1, canvas._undo_list.end());
+		canvas._undo_list.emplace_back(canvas._mask);
+		canvas._undo_idx++;
     }
 }
