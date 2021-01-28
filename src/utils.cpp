@@ -56,7 +56,7 @@ int getImgFilelist(std::vector<std::string>& totalfilelist, std::vector<std::str
     return 0;
 }
 
-std::vector<std::string> readNamesFile(std::string const filename)
+std::vector<std::string> readNamesFile(std::string filename)
 {
     std::ifstream file(filename);
     std::vector<std::string> file_lines;
@@ -66,10 +66,11 @@ std::vector<std::string> readNamesFile(std::string const filename)
     return file_lines;
 }
 
-int openImage(std::string img_path, cv::Size& img_size, QImage& image)
+int openImage(QString img_path, cv::Size& img_size, QImage& image)
 {
-    cv::Mat cv_img = cv::imread(img_path);
-
+    std::string path = img_path.toLocal8Bit();
+    cv::Mat cv_img = cv::imread(path);
+    
     img_size = cv_img.size();
 
     cv_img = resizeImage(cv_img);

@@ -1,6 +1,13 @@
 # InstanceSegmentationAnnotationTool
 
 ## 개요
+#### 2021.01.28 [ver.1.3]
+- 한글 경로 지원
+- 버그 수정
+  - manual mode undo 기능 보완
+  - 같은 이미지를 여러 번 조회 시 결과 mask가 변경되는 문제 해결
+  - dat 파일 시각화 시 outlier 제거
+  
 #### 2021.01.11 [ver.1.2]
 - 시각화 기능 개선
   - bounding box 추가, contour 추가
@@ -142,10 +149,6 @@
 <div align="left">
 
     - manual 체크박스 체크 후 드래그하여 mask 수정
-
-## to do
-- 이미지 한글 경로 지원
-- pretrained segmentation model 사용(pytorch, tensorflow 등)
 
 ## 개발 환경
 - Windows 10

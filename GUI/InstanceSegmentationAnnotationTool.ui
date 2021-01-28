@@ -17,7 +17,7 @@
    <enum>Qt::StrongFocus</enum>
   </property>
   <property name="windowTitle">
-   <string>InstanceSegmentationAnnotationTool 1.2 by KITECH AI Lab.</string>
+   <string>InstanceSegmentationAnnotationTool 1.3 by KITECH AI Lab.</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_3">

@@ -64,8 +64,10 @@ ISAT::ISAT(QWidget *parent)
 
     _color = ColorMask();
     _mask = ImageMask();
-    _is_watershed = false;
     _watershed = ImageMask();
+    _is_watershed = false;
+    
+    _init_watershed = ImageMask();
 
     _inputImg_display = QImage();
     _display_manual_mask = true;
@@ -78,10 +80,11 @@ ISAT::ISAT(QWidget *parent)
 
 void ISAT::readImage()
 {
-    _undo_list.clear();
+    _undo_mask.clear();
+    _undo_watershed.clear();
     _undo_idx = 0;
 
-    openImage(_imgFile.toStdString(), _inputImg_size, _inputImg);
+    openImage(_imgFile, _inputImg_size, _inputImg);
     
     _inputImg_display = QImage(_inputImg.size(), QImage::Format_RGB888);
     QPainter painter(&_inputImg_display);
@@ -93,7 +96,8 @@ void ISAT::readImage()
 
     read();
 
-    _undo_list.emplace_back(_mask);
+    _undo_mask.emplace_back(_mask);
+    _undo_watershed.emplace_back(_watershed);
 }
 
 bool ISAT::checkDuplication(int id, QColor color)
@@ -264,9 +268,13 @@ void ISAT::draw(QMouseEvent *e, QRect size)
 
 void ISAT::update_mask()
 {
+    if (_effective_id.size() == 0)
+        return;
+
     cv::Mat inputImg_display = qImage2Mat(_inputImg);
     cv::Mat id = qImage2Mat(_mask.id);
     cv::Mat color = qImage2Mat(_mask.color);
+    cv::Mat watershed_id = qImage2Mat(_watershed.id);
 
     int width = inputImg_display.cols;
     int height = inputImg_display.rows;
@@ -290,6 +298,10 @@ void ISAT::update_mask()
                 color.at<cv::Vec3b>(row, col)[0] = 0;
                 color.at<cv::Vec3b>(row, col)[1] = 0;
                 color.at<cv::Vec3b>(row, col)[2] = 0;
+
+                watershed_id.at<cv::Vec3b>(row, col)[0] = 0;
+                watershed_id.at<cv::Vec3b>(row, col)[1] = 0;
+                watershed_id.at<cv::Vec3b>(row, col)[2] = 0;
             }
             else
             {
@@ -305,13 +317,14 @@ void ISAT::update_mask()
     
     _mask.id = mat2QImage(id);
     _mask.color = mat2QImage(color);
+    _watershed.id = mat2QImage(watershed_id);
 
-    if (_display_watershed_mask && _is_watershed && _effective_id.size() != 0)
+    if (_display_watershed_mask && _is_watershed)
     {
-        cv::Mat watershed_id = qImage2Mat(_watershed.id);
         for (auto id_num : _effective_id)
         {
             cv::Mat mask = (watershed_id == id_num);
+
             cv::cvtColor(mask, mask, cv::COLOR_BGR2GRAY);
 
             mask.convertTo(mask, CV_8U);
@@ -325,7 +338,10 @@ void ISAT::update_mask()
             std::vector<cv::Mat> contours;
             cv::Mat hierarchy;
             cv::findContours(mask.clone(), contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-                        
+
+            if (contours.size() == 0)
+                continue;
+
             cv::Rect box;
             for (auto contour : contours)
                 box = box | cv::boundingRect(contour);    
@@ -380,8 +396,6 @@ void ISAT::idToColor(ImageMask& mask)
     {
         for (int row = 0; row < height; row++)
         {
-            //changeID(img_id.at<cv::Vec3b>(row, col)[0]);
-            
             if (!changeID(img_id.at<cv::Vec3b>(row, col)[0])) 
 			{
 
@@ -390,6 +404,7 @@ void ISAT::idToColor(ImageMask& mask)
 				img_id.at<cv::Vec3b>(row, col)[1] = 0;
 				img_id.at<cv::Vec3b>(row, col)[2] = 0;
 			}
+            else
             {
                 QColor rgb = _color.color;
 
@@ -405,14 +420,14 @@ void ISAT::idToColor(ImageMask& mask)
 
 void ISAT::save()
 {
-    if (_is_watershed)
-    {
-        std::string save_root = _imgFile.toStdString();
+    if (_is_watershed && _init_watershed.id != _watershed.id)
+    {        
+        std::string save_root = _imgFile.toLocal8Bit();
         save_root = save_root.substr(0, save_root.find_last_of(".") + 1);
 
         cv::Mat watershed_mask = qImage2Mat(_watershed.id); // 255: edge
         if (qImage2Mat(_inputImg).size() != _inputImg_size)
-            cv::resize(watershed_mask, watershed_mask, _inputImg_size,0,0,cv::INTER_NEAREST);
+            cv::resize(watershed_mask, watershed_mask, _inputImg_size, 0, 0, cv::INTER_NEAREST);
         cv::imwrite(save_root + "mask.png", watershed_mask);
 
         std::string old_mask_path = save_root + "mask.png";
@@ -424,7 +439,7 @@ void ISAT::save()
         
         cv::Mat drawing_mask = qImage2Mat(_mask.id);
         if (qImage2Mat(_inputImg).size() != _inputImg_size)
-            cv::resize(drawing_mask, drawing_mask, _inputImg_size);
+            cv::resize(drawing_mask, drawing_mask, _inputImg_size, 0, 0, cv::INTER_NEAREST);
         cv::imwrite(save_root + "dat.png", drawing_mask);
 
         old_mask_path = save_root + "dat.png";
@@ -453,7 +468,7 @@ void ISAT::save()
 
 void ISAT::read()
 {
-    std::string save_root = _imgFile.toStdString();
+    std::string save_root = _imgFile.toLocal8Bit();
     save_root = save_root.substr(0, save_root.find_last_of(".") + 1);
 
     if (FileExist(save_root+"mask") && FileExist(save_root+"dat") && FileExist(save_root+"txt"))
@@ -485,13 +500,14 @@ void ISAT::read()
 
         cv::Mat watershed_mask = cv::imread(save_root + "mask");
         if (input_img.size() != watershed_mask.size())
-            cv::resize(watershed_mask, watershed_mask, input_img.size(),0,0, cv::INTER_NEAREST);
+            cv::resize(watershed_mask, watershed_mask, input_img.size(), 0, 0, cv::INTER_NEAREST);
         _watershed.id = mat2QImage(watershed_mask);
         idToColor(_watershed);
+        _init_watershed = _watershed;
 
         cv::Mat drawing_mask = cv::imread(save_root + "dat");
         if (input_img.size() != drawing_mask.size())
-            cv::resize(drawing_mask, drawing_mask, input_img.size());
+            cv::resize(drawing_mask, drawing_mask, input_img.size(), 0, 0, cv::INTER_NEAREST);
         _mask.id = mat2QImage(drawing_mask);
         idToColor(_mask);
 

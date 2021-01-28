@@ -6,7 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    
     QGuiApplication::setWindowIcon(QIcon(":/logo"));
     
     connect(new QShortcut(QKeySequence(Qt::Key_Left),           this),  SIGNAL(activated()),    this,   SLOT(btn_prev_clicked()));
@@ -111,7 +111,6 @@ void MainWindow::btn_up_clicked()
 
 	ui->treeWidget_class->setCurrentItem(item_above);
 	item_above->setSelected(true);
-
 }
 
 void MainWindow::btn_down_clicked()
@@ -127,8 +126,6 @@ void MainWindow::btn_down_clicked()
 		return;
 	ui->treeWidget_class->setCurrentItem(item_below);
 	item_below->setSelected(true);
-
-
 }
 
 void MainWindow::slider_value_changed()
@@ -167,20 +164,21 @@ void MainWindow::btn_save_clicked()
 
     canvas.save();
     
-    show_msgBox(QMessageBox::Information, "Save", "Data was saved");
+    //show_msgBox(QMessageBox::Information, "Save", "Data was saved");
 }
 
 void MainWindow::btn_img_dir_clicked()
 {
-	init_parameter.is_set_dir = false;
+    init_parameter.is_set_dir = false;
     init_parameter.is_init = false;
 
     QString opened_dir = QFileDialog::getExistingDirectory(this, "Choose a directory to be read in", "./", QFileDialog::ShowDirsOnly);
-	
-	std::string selected_dir = opened_dir.toStdString();
+
+    std::string selected_dir = opened_dir.toLocal8Bit();
 	
     std::vector<std::string> total_file_list;
     getFilelistRecursive(selected_dir, total_file_list);
+
     std::vector<std::string> img_file_list;
     getImgFilelist(total_file_list, img_file_list);
 
@@ -193,9 +191,8 @@ void MainWindow::btn_img_dir_clicked()
     {
         QStringList img_list;
 		
-
         for (auto file : img_file_list)
-            img_list << QString::fromStdString(file);
+            img_list << QString::fromLocal8Bit(file.c_str());
 
         canvas._imgList = img_list;
 		canvas._imgIndex = 0;
@@ -214,7 +211,8 @@ void MainWindow::btn_img_dir_clicked()
 void MainWindow::btn_set_class_clicked()
 {
     QString opened_file = QFileDialog::getOpenFileName(nullptr, tr("Open LabelList file"), "./", tr("LabelList Files (*.txt *.names)"));
-    std::vector<std::string> class_names = readNamesFile(opened_file.toStdString());
+    std::string selected_file = opened_file.toLocal8Bit();
+    std::vector<std::string> class_names = readNamesFile(selected_file);
 
     if (class_names.size() == 0)
     {
@@ -269,6 +267,7 @@ void MainWindow::change_watershed()
 
 	change_visualize_mode();
 }
+
 void  MainWindow::change_visualize_mode()
 {
     if (!init_parameter.is_init)
@@ -358,7 +357,6 @@ void MainWindow::btn_minus_clicked()
 
     QTreeWidgetItem *parent = item->parent();
 
-	
     int child_idx = parent->indexOfChild(item);
 
     for (int idx = child_idx; idx < parent->childCount(); idx++)
@@ -398,7 +396,7 @@ void MainWindow::undo()
     if (!init_parameter.is_init)
         return;
 
-    if (canvas._undo_list.size() == 0)
+    if (canvas._undo_mask.size() == 0 || canvas._undo_watershed.size() == 0)
         return;
     
     if (canvas._undo_idx == 0)
@@ -406,14 +404,19 @@ void MainWindow::undo()
 
     canvas._undo_idx -= 1;
 
-    canvas._mask = canvas._undo_list[canvas._undo_idx];
+    canvas._mask = canvas._undo_mask[canvas._undo_idx];
+    canvas._watershed = canvas._undo_watershed[canvas._undo_idx];
+    
     canvas.checkID();
 
     canvas.update_mask();
     update_img();
 
     if (canvas._undo_idx == 0)
-        canvas._undo_list.emplace_back(canvas._mask);
+    {
+        canvas._undo_mask.emplace_back(canvas._mask);
+        canvas._undo_watershed.emplace_back(canvas._watershed);
+    }
 }
 
 void MainWindow::redo()
@@ -421,15 +424,16 @@ void MainWindow::redo()
     if (!init_parameter.is_init)
         return;
 
-    if (canvas._undo_list.size() == 0)
+    if (canvas._undo_mask.size() == 0 || canvas._undo_watershed.size() == 0)
         return;
 
-    if (canvas._undo_idx == canvas._undo_list.size() -1)
+    if (canvas._undo_idx == canvas._undo_mask.size() -1 || canvas._undo_idx == canvas._undo_watershed.size() - 1)
         return;
 
     canvas._undo_idx += 1;
 
-    canvas._mask = canvas._undo_list[canvas._undo_idx];
+    canvas._mask = canvas._undo_mask[canvas._undo_idx];
+    canvas._watershed = canvas._undo_watershed[canvas._undo_idx];
     canvas.checkID();
     canvas.update_mask();
     update_img();
@@ -671,8 +675,12 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *e)
     {
         canvas._mouse_is_pressed = false;
 		
-		canvas._undo_list.erase(canvas._undo_list.begin() + canvas._undo_idx+1, canvas._undo_list.end());
-		canvas._undo_list.emplace_back(canvas._mask);
+		canvas._undo_mask.erase(canvas._undo_mask.begin() + canvas._undo_idx+1, canvas._undo_mask.end());
+		canvas._undo_mask.emplace_back(canvas._mask);
+
+        canvas._undo_watershed.erase(canvas._undo_watershed.begin() + canvas._undo_idx+1, canvas._undo_watershed.end());
+        canvas._undo_watershed.emplace_back(canvas._watershed);
+
 		canvas._undo_idx++;
     }
 }

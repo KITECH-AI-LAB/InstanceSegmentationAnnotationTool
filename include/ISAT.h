@@ -46,12 +46,16 @@ public:
     ImageMask               _mask;
     ImageMask               _watershed;
     bool                    _is_watershed;
+
+    ImageMask               _init_watershed;
+
     QImage                  _inputImg_display;
     std::vector<ColorMask>  _id_storage;
     std::vector<int>        _effective_id;
     
-    std::vector<ImageMask>  _undo_list;
     int                     _undo_idx;
+    std::vector<ImageMask>  _undo_mask;
+    std::vector<ImageMask>  _undo_watershed;
     
     void readImage();
     bool checkDuplication(int id, QColor color);

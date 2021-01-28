@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include <fstream>
 #include <io.h>
 #include <algorithm>
@@ -28,9 +27,9 @@ std::string getFileExt(const std::string& filename);
 std::string str2Lower(std::string str);
 int getFilelistRecursive(std::string path, std::vector<std::string>& filelist);
 int getImgFilelist(std::vector<std::string>& totalfilelist, std::vector<std::string>& imgfilelist);
-std::vector<std::string> readNamesFile(std::string const filename);
+std::vector<std::string> readNamesFile(std::string filename);
 
-int openImage(std::string img_path, cv::Size& img_size, QImage& image);
+int openImage(QString img_path, cv::Size& img_size, QImage& image);
 cv::Mat resizeImage(cv::Mat const& src);
 QImage mat2QImage(cv::Mat const& src);
 cv::Mat qImage2Mat(QImage const& src);
